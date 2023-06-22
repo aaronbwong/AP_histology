@@ -1,5 +1,5 @@
-function AP_process_histology(im_path,resize_factor,slice_images)
-% AP_process_histology(im_path,resize_factor,slice_images)
+function AP_process_histology(im_path,resize_factor,slice_images,save_dir)
+% AP_process_histology(im_path,resize_factor,slice_images,save_dir)
 %
 % im_path - path with images of slides (tif/tiff/ome.tiff)
 % resize_factor (if not ome.tiff) - resizing factor for saving images (e.g.
@@ -8,6 +8,7 @@ function AP_process_histology(im_path,resize_factor,slice_images)
 % scaling (which is 10 microns per pixel)
 % slice_images - true/false: images are individual slices, skip slice
 % choosing step (false by default)
+% save_dir - path to save output images (subfolder in im_path by default)
 %
 % Resize and white balance histology images and extract images of each slice
 % Andy Peters (peters.andrew.j@gmail.com)
@@ -178,7 +179,9 @@ elseif slice_images
     % If slice images, save all images as-is
     
     % Set save directory as subdirectory within original
-    save_dir = [im_path filesep 'slices'];
+    if ~exist('save_dir','var') || isempty(save_dir)
+        save_dir = [im_path filesep 'slices'];
+    end
     if ~exist(save_dir,'dir')
         mkdir(save_dir)
     end
