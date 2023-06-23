@@ -24,7 +24,8 @@ ccf_alignment_fn = [slice_im_path filesep 'atlas2histology_tform.mat'];
 load(ccf_alignment_fn);
 
 ccf_points = cell(length(atlas2histology_tform),1);
-for curr_slice = find(~cellfun(@isempty,histology_points))
+nonemptyslices = find(~cellfun(@isempty,histology_points));
+for curr_slice = nonemptyslices(:)'
     
     % Transform histology to atlas slice
     tform = affine2d;
