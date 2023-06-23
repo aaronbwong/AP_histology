@@ -59,8 +59,16 @@ gui_data.atlas_im_h = imagesc(gui_data.histology_ccf(1).tv_slices, ...
     'Parent',gui_data.atlas_ax,'ButtonDownFcn',@mouseclick_atlas);
 
 % Initialize alignment control points and tform matricies
-gui_data.histology_control_points = repmat({zeros(0,2)},length(gui_data.slice_im),1);
-gui_data.atlas_control_points = repmat({zeros(0,2)},length(gui_data.slice_im),1);
+if ~exist('histology_control_points','var')
+    gui_data.histology_control_points = repmat({zeros(0,2)},length(gui_data.slice_im),1);
+else
+    gui_data.histology_control_points = histology_control_points;
+end
+if ~exist('atlas_control_points','var')
+    gui_data.atlas_control_points = repmat({zeros(0,2)},length(gui_data.slice_im),1);
+else
+    gui_data.atlas_control_points = atlas_control_points;
+end
 
 gui_data.histology_control_points_plot = plot(gui_data.histology_ax,nan,nan,'.w','MarkerSize',20);
 gui_data.atlas_control_points_plot = plot(gui_data.atlas_ax,nan,nan,'.r','MarkerSize',20);
@@ -128,8 +136,12 @@ switch eventdata.Key
     case 's'
         atlas2histology_tform = ...
             gui_data.histology_ccf_manual_alignment;
+        histology_control_points = ...
+            gui_data.histology_control_points;
+        atlas_control_points = ...
+            gui_data.atlas_control_points;
         save_fn = [gui_data.slice_im_path filesep 'atlas2histology_tform.mat'];
-        save(save_fn,'atlas2histology_tform');
+        save(save_fn,'atlas2histology_tform','histology_control_points','atlas_control_points');
         disp(['Saved ' save_fn]);
         
     % Escape: save and exit
