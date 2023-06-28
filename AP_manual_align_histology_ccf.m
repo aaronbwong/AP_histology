@@ -152,8 +152,12 @@ switch eventdata.Key
         if strcmp(user_confirm,'Yes')            
             atlas2histology_tform = ...
                 gui_data.histology_ccf_manual_alignment;
+            histology_control_points = ...
+                gui_data.histology_control_points;
+            atlas_control_points = ...
+                gui_data.atlas_control_points;
             save_fn = [gui_data.slice_im_path filesep 'atlas2histology_tform.mat'];
-            save(save_fn,'atlas2histology_tform');
+            save(save_fn,'atlas2histology_tform','histology_control_points','atlas_control_points');
             disp(['Saved ' save_fn]);
             close(gui_fig);            
         end
