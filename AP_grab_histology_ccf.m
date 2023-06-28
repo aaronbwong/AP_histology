@@ -184,9 +184,10 @@ switch eventdata.Key
                     ['Saving atlas slices (' num2str(curr_slice) '/' num2str(length(gui_data.slice_im)) ')...']);
             end                     
             close(h);
-            
+            slice_points = gui_data.slice_points;
+            slice_vector = gui_data.slice_vector;
             save_fn = [gui_data.slice_im_path filesep 'histology_ccf.mat'];
-            save(save_fn,'histology_ccf','-v7.3');
+            save(save_fn,'histology_ccf','slice_points','slice_vector','-v7.3');
             close(gui_fig);            
         end
 end
