@@ -7,6 +7,8 @@ function AP_auto_align_histology_ccf(slice_im_path)
 % Load in slice images
 slice_im_path = slice_im_path;
 slice_im_dir = dir([slice_im_path filesep '*.tif']);
+slice_im_dir = [slice_im_dir;dir([slice_im_path filesep '*.jpg'])];
+slice_im_dir = [slice_im_dir;dir([slice_im_path filesep '*.png'])];
 slice_im_fn = natsortfiles(cellfun(@(path,fn) [path filesep fn], ...
     {slice_im_dir.folder},{slice_im_dir.name},'uni',false));
 slice_im = cell(length(slice_im_fn),1);

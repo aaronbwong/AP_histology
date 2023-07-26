@@ -8,9 +8,12 @@ gui_data.tv = tv;
 gui_data.av = av;
 gui_data.st = st;
 
+
 % Load in slice images
 gui_data.slice_im_path = slice_im_path;
 slice_im_dir = dir([slice_im_path filesep '*.tif']);
+slice_im_dir = [slice_im_dir;dir([slice_im_path filesep '*.jpg'])];
+slice_im_dir = [slice_im_dir;dir([slice_im_path filesep '*.png'])];
 slice_im_fn = natsortfiles(cellfun(@(path,fn) [path filesep fn], ...
     {slice_im_dir.folder},{slice_im_dir.name},'uni',false));
 gui_data.slice_im = cell(length(slice_im_fn),1);
@@ -254,7 +257,7 @@ cam_vector = get_camera_vector(gui_data);
 
 % Move slice point
 gui_data.atlas_slice_point = gui_data.atlas_slice_point + ...
-    eventdata.VerticalScrollCount*cam_vector;
+    eventdata.VerticalScrollCount*cam_vector;  % A positive or negative number that indicates the direction and number of scroll wheel clicks. The vertical scroll count is the sum of all scroll wheel clicks that occurred since the last time the callback executed.
 
 % Upload gui data
 guidata(gui_fig, gui_data);
