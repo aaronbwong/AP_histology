@@ -1,5 +1,6 @@
-function AP_grab_histology_ccf(tv,av,st,slice_im_path)
+function AP_grab_histology_ccf(tv,av,st,slice_im_path,slice_plane_fn)
 % Grab CCF slices corresponding to histology slices
+% loading of slice_plane_fn from deepslice is not necessary
 % Andy Peters (peters.andrew.j@gmail.com)
 
 % Initialize guidata
@@ -70,6 +71,19 @@ gui_data.atlas_slice_point = camtarget;
 % Set up atlas parameters to save for histology
 gui_data.slice_vector = nan(1,3);
 gui_data.slice_points = nan(length(gui_data.slice_im),3);
+
+% load the slice plance
+if nargin>4
+%     [gui_data.Cam_Vector, gui_data.Cam_Target] = csv2allenCam(slice_plane_fn); % to initinize the slice plane found by deepslice
+    [gui_data.Cam_Vector, gui_data.Cam_Target] = xml2allenCam(slice_plane_fn); % to initinize the slice plane found by deepslice
+    disp('make sure the order of slice planes corresponds to the histology images!!')
+    for curr_slice = 1:length(slice_im_fn)
+        [~,f_n,ext]=fileparts(slice_im_fn{curr_slice});
+        disp([f_n,ext])
+    end
+    view(gui_data.Cam_Vector(1,:))
+    gui_data.atlas_slice_point = gui_data.Cam_Target(1,:);
+end
 
 % Upload gui data
 guidata(gui_fig,gui_data);
@@ -211,14 +225,17 @@ if all(~isnan(gui_data.slice_points(gui_data.curr_histology_slice,:)))
     gui_data.atlas_slice_point = ...
         gui_data.slice_points(gui_data.curr_histology_slice,:);
     title(gui_data.histology_ax,'Saved atlas position')
-    guidata(gui_fig,gui_data);
-    update_atlas_slice(gui_fig);
 else
     title(gui_data.histology_ax,'No saved atlas position')
+    if isfield(gui_data,'Cam_Vector')
+        view(gui_data.Cam_Vector(gui_data.curr_histology_slice,:)) % If there's no saved atlas position, loading atlas to plane found by deepslice
+        gui_data.atlas_slice_point = gui_data.Cam_Target(gui_data.curr_histology_slice,:);
+    end
 end
 
 % Upload gui data
-guidata(gui_fig, gui_data);
+guidata(gui_fig,gui_data);
+update_atlas_slice(gui_fig);
 
 end
 
