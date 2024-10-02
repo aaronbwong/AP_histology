@@ -70,11 +70,11 @@ zlim([-10,dv_max+10])
 
 switch channel
     case 1
-        colormap(brewermap([],'Reds'));
+        colormap(AP_colormap('WR'));
     case 2
-        colormap(brewermap([],'Greens'));
+        colormap(AP_colormap('WG'));
     case 3
-        colormap(brewermap([],'Blues'));
+        colormap(AP_colormap('WB'));
 end
 
 % Turn on rotation by default
@@ -88,7 +88,7 @@ for curr_slice = 1:length(gui_data.slice_im)
     % Get thresholded image
     curr_slice_im = gui_data.atlas_aligned_histology{curr_slice}(:,:,channel);
     slice_alpha = curr_slice_im;
-    value_thresh = 100;
+    value_thresh = 25;
     
     % Draw if thresholded pixels (ignore if not)
     if any(curr_slice_im(:) > value_thresh)

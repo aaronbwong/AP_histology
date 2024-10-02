@@ -1,6 +1,5 @@
-function AP_align_probe_histology(st,slice_path, ...
-    spike_times,spike_templates,template_depths, ...
-    lfp,lfp_channel_positions,use_probe)
+function gui_fig = AP_align_probe_histology(st,slice_path, ...
+    spike_times,spike_templates,template_depths,use_probe)
 % AP_align_probe_histology(st,slice_path,spike_times,spike_templates,template_depths,lfp,lfp_channel_positions,use_probe)
 
 % If no probe specified, use probe 1
@@ -13,35 +12,42 @@ probe_ccf_fn = [slice_path filesep 'probe_ccf.mat'];
 load(probe_ccf_fn);
 
 % Get normalized log spike n
-[~,~,spike_templates_reidx] = unique(spike_templates);
-norm_template_spike_n = mat2gray(log10(accumarray(spike_templates_reidx,1)+1));
+spike_templates_unique = unique(spike_templates);
+norm_template_spike_n = mat2gray(log10(accumarray(spike_templates,1)+1));
 
 % Get multiunit correlation
-n_corr_groups = 40;
+depth_corr_window = 200; % MUA window in microns
+depth_corr_window_spacing = 50; % MUA window spacing in microns
+
 max_depths = 3840; % (hardcode, sometimes kilosort2 drops channels)
-depth_group_edges = linspace(0,max_depths,n_corr_groups+1);
-depth_group = discretize(template_depths,depth_group_edges);
-depth_group_centers = depth_group_edges(1:end-1)+(diff(depth_group_edges)/2);
-unique_depths = 1:length(depth_group_edges)-1;
 
-spike_binning = 0.01; % seconds
-corr_edges = nanmin(spike_times):spike_binning:nanmax(spike_times);
-corr_centers = corr_edges(1:end-1) + diff(corr_edges);
+depth_corr_bins = [0:depth_corr_window_spacing:(max_depths-depth_corr_window); ...
+    (0:depth_corr_window_spacing:(max_depths-depth_corr_window))+depth_corr_window];
+depth_corr_bin_centers = depth_corr_bins(1,:) + diff(depth_corr_bins,[],1)/2;
 
-binned_spikes_depth = zeros(length(unique_depths),length(corr_edges)-1);
-for curr_depth = 1:length(unique_depths)
+spike_binning_t = 0.01; % seconds
+spike_binning_t_edges = nanmin(spike_times):spike_binning_t:nanmax(spike_times);
+
+binned_spikes_depth = zeros(size(depth_corr_bins,2),length(spike_binning_t_edges)-1);
+for curr_depth = 1:size(depth_corr_bins,2)
+    curr_depth_templates_idx = ...
+        find(template_depths >= depth_corr_bins(1,curr_depth) & ...
+        template_depths < depth_corr_bins(2,curr_depth));
+    
     binned_spikes_depth(curr_depth,:) = histcounts(spike_times( ...
-        ismember(spike_templates,find(depth_group == unique_depths(curr_depth)))), ...
-        corr_edges);
+        ismember(spike_templates,curr_depth_templates_idx)),spike_binning_t_edges);
 end
 
 mua_corr = corrcoef(binned_spikes_depth');
 
+% Create GUI
 gui_fig = figure('color','w','KeyPressFcn',@keypress);
+tiledlayout(1,7,'TileSpacing','compact');
 
 % Plot spike depth vs rate
-unit_ax = subplot('Position',[0.1,0.1,0.1,0.8]);
-scatter(norm_template_spike_n,template_depths,15,'k','filled');
+unit_ax = nexttile([1,3]);
+scatter(norm_template_spike_n(spike_templates_unique), ...
+    template_depths(spike_templates_unique),15,'k','filled');
 set(unit_ax,'YDir','reverse');
 ylim([0,max_depths]);
 xlabel('N spikes')
@@ -50,32 +56,17 @@ set(unit_ax,'FontSize',12)
 ylabel('Depth (\mum)');
 
 % Plot multiunit correlation
-multiunit_ax = subplot('Position',[0.2,0.1,0.3,0.8],'YDir','reverse');
-imagesc(depth_group_centers,depth_group_centers,mua_corr);
-caxis([0,max(mua_corr(mua_corr ~= 1))]); colormap(hot);
+multiunit_ax = nexttile([1,3]); axis off;
+imagesc(depth_corr_bin_centers,depth_corr_bin_centers,mua_corr);
+caxis([0,0.3]); colormap(hot);
 ylim([0,max_depths]);
 set(multiunit_ax,'YTick',[]);
 title('MUA correlation');
 set(multiunit_ax,'FontSize',12)
 xlabel(multiunit_ax,'Multiunit depth');
 
-% Plot LFP median-subtracted correlation
-lfp_moving_median = 10; % channels to take sliding median
-lfp_ax = subplot('Position',[0.5,0.1,0.3,0.8],'YDir','reverse');
-imagesc(lfp_channel_positions,lfp_channel_positions, ...
-    corrcoef((movmedian(zscore(double(lfp),[],2),lfp_moving_median,1) - ...
-    nanmedian(zscore(double(lfp),[],2),1))'));
-xlim([0,max_depths]);
-ylim([0,max_depths]);
-set(lfp_ax,'YTick',[]);
-title('LFP power');
-set(lfp_ax,'FontSize',12)
-caxis([-1,1])
-xlabel(lfp_ax,'Depth (\mum)'); 
-colormap(lfp_ax,brewermap([],'*RdBu'));
-
 % Link all y-axes
-linkaxes([unit_ax,multiunit_ax,lfp_ax],'y');
+linkaxes([unit_ax,multiunit_ax],'y');
 
 % Plot probe areas (interactive)
 % (load the colormap - located in the repository, find by associated fcn)
@@ -83,7 +74,7 @@ allenCCF_path = fileparts(which('allenCCFbregma'));
 cmap_filename = [allenCCF_path filesep 'allen_ccf_colormap_2017.mat'];
 load(cmap_filename);
 
-probe_areas_ax = subplot('Position',[0.8,0.1,0.05,0.8]);
+probe_areas_ax = nexttile;
 
 % Convert probe CCF coordinates to linear depth (*10 to convert to um)
 % (use the dorsal-most coordinate as the reference point)
@@ -97,7 +88,7 @@ trajectory_area_boundary_idx = ...
     [1;find(diff(double(probe_ccf(use_probe).trajectory_areas)) ~= 0)+1];
 trajectory_area_boundaries = probe_trajectory_depths(trajectory_area_boundary_idx);
 trajectory_area_centers = (trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries)/2);
-trajectory_area_labels = st.safe_name(probe_ccf(use_probe).trajectory_areas(trajectory_area_boundary_idx));
+trajectory_area_labels = st.acronym(probe_ccf(use_probe).trajectory_areas(trajectory_area_boundary_idx));
 
 [~,area_dv_sort_idx] = sort(trajectory_area_centers);
 
@@ -117,7 +108,7 @@ set(probe_areas_ax,'FontSize',10)
 boundary_lines = gobjects;
 for curr_boundary = 1:length(trajectory_area_boundaries)
     boundary_lines(curr_boundary,1) = line(probe_areas_ax,[-13.5,1.5], ...
-        repmat(trajectory_area_boundaries(curr_boundary),1,2),'color','b','linewidth',2);
+        repmat(trajectory_area_boundaries(curr_boundary),1,2),'color','b','linewidth',1);
 end
 set(probe_areas_ax,'Clipping','off');
 
