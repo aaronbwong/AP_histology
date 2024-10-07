@@ -128,9 +128,18 @@ if curr_av == 0
     return
 end
 
-% Grab area name and set title
+% Grab area name
 curr_area_name = gui_data.st.safe_name(curr_av);
-set(gui_data.histology_ax_title,'String',curr_area_name);
+
+% lookup CCF coordinates
+ccf_points = ccf_lookup(gui_data.histology_ccf_alignment,gui_data.histology_ccf,gui_data.curr_slice,mouse_x,mouse_y);
+
+% set title
+titleStr = [curr_area_name,...
+                ...[num2str(mouse_x,'x:%d'),'  ',num2str(mouse_y,'y:%d')],...
+                [num2str(ccf_points(1),'AP:%.1f'),'  ',num2str(ccf_points(2),'DV:%.1f'),'  ',num2str(ccf_points(3),'ML:%.1f')]
+            ];
+set(gui_data.histology_ax_title,'String',titleStr);
 
 end
 
@@ -168,17 +177,31 @@ align_ccf_to_histology(gui_fig)
 
 end
 
-
-
-
-
-
-
-
-
-
-
-
+function ccf_points = ccf_lookup(atlas2histology_tform,histology_ccf,curr_slice,x,y)
+ % Transform histology to atlas slice
+    tform = affine2d;
+    tform.T = atlas2histology_tform{curr_slice};
+    % (transform is CCF -> histology, invert for other direction)
+    tform = invert(tform);
+    
+    % Transform and round to nearest index
+    [histology_points_atlas_x,histology_points_atlas_y] = ...
+        transformPointsForward(tform, ...
+        x, ...
+        y);
+    
+    histology_points_atlas_x = round(histology_points_atlas_x);
+    histology_points_atlas_y = round(histology_points_atlas_y);
+    
+    probe_points_atlas_idx = sub2ind(size(histology_ccf(curr_slice).av_slices), ...
+        histology_points_atlas_y,histology_points_atlas_x);
+    
+    % Get CCF coordinates for histology coordinates (CCF in AP,DV,ML)
+    ccf_points= ...
+        [histology_ccf(curr_slice).plane_ap(probe_points_atlas_idx), ...
+        histology_ccf(curr_slice).plane_dv(probe_points_atlas_idx), ...
+        histology_ccf(curr_slice).plane_ml(probe_points_atlas_idx)];
+end
 
 
 
