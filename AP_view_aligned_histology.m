@@ -11,6 +11,8 @@ gui_data.st = st;
 % Load in slice images
 gui_data.slice_im_path = slice_im_path;
 slice_im_dir = dir([slice_im_path filesep '*.tif']);
+slice_im_dir = [slice_im_dir;dir([slice_im_path filesep '*.jpg'])];
+slice_im_dir = [slice_im_dir;dir([slice_im_path filesep '*.png'])];
 slice_im_fn = natsortfiles(cellfun(@(path,fn) [path filesep fn], ...
     {slice_im_dir.folder},{slice_im_dir.name},'uni',false));
 gui_data.slice_im = cell(length(slice_im_fn),1);
